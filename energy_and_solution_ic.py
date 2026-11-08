@@ -8,10 +8,17 @@ BOUND_Y = 100.0
 #成本函數三個權重: Cost = ALPHA*Area + BETA*Σ(Wij*HPWLij) + GAMMA*Overlap
 ALPHA = 1.0   #面積權重 α
 BETA = 1.0    #線長延遲權重 β
-GAMMA = 10.0  #重疊懲罰權重 γ (重疊1罰10)
+OVERLAP_PENALTY = 10.0  #重疊懲罰權重 γ (重疊1罰10)
 
 #IC模組清單[w寬,h高] -> 4*2 (0:CPU, 1:GPU, 2:I/O, 3:Cache)
-MODULES = np.array([[10.0,10.0],[10.0,10.0],[10.0,10.0],[10.0,10.0]])
+MODULES = np.array(
+    [
+        [10.0,10.0],
+        [10.0,10.0],
+        [10.0,10.0],
+        [10.0,10.0]
+        ]
+    )
 
 #模組連線頻率權重 Wij
 #對應下方 triu_indices 配對順序: (0,1)CPU-GPU, (0,2)CPU-I/O, (0,3)CPU-Cache, (1,2)GPU-I/O, (1,3)GPU-Cache, (2,3)I/O-Cache
@@ -34,7 +41,7 @@ def initial_solution():
 
 # 3: 由現解 R 產生鄰近解R1(step3:隨機移動一顆方塊)
 def neighbor(R,s):
-    
+    #避免動到R
     R1 = R.copy()
     # 從0,1,2,3中隨機抽一個號碼idx決定這次要移動哪一顆模組
     idx = np.random.randint(0,len(R1))
@@ -77,6 +84,9 @@ def energy(R):
     #自動配對
     #n=4為例->i:[0,0,0,1,1,2] j:[1,2,3,2,3,3]
     n = len(R)
+    # n：矩陣的列數（或方陣大小）。
+    # k（可選）：對角線偏移量（預設 `0` 為主對角線；`> 0` 往上偏移；`< 0` 往下偏移）。
+    # m（可選）：矩陣的欄數（預設等於 `n`，即適用於 n × n 方陣）。
     i,j = np.triu_indices(n,k=1)
     
     #根據配對號碼i抓左邊方塊的x1y1w1h1
@@ -105,7 +115,7 @@ def energy(R):
     overlap_area = np.sum(overlap_w*overlap_h)
     
     # new總成本公式
-    total_energy = (ALPHA * box_area) + (BETA * wire_cost) + (GAMMA * overlap_area)
+    total_energy = (ALPHA * box_area) + (BETA * wire_cost) + (OVERLAP_PENALTY * overlap_area)
     return float(total_energy)
 
 if __name__ == "__main__":
