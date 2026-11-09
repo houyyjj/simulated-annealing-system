@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="逐輪觀察模擬退火中的晶片佈局與成本變化。">
+  <title>晶片佈局實驗室</title>
+  <link rel="stylesheet" href="styles.css">
+  $refresh
+</head>
+<body>
+  <main>
+    <div class="workspace">
+      <div class="main-column">
+        <section class="panel layout-panel" aria-labelledby="layout-title">
+          <header class="panel-header">
+            <h1 id="layout-title">晶片佈局</h1>
+          </header>
+
+          <div class="board">
+            <svg id="floorplan" viewBox="0 0 540 530" role="img" aria-label="CPU、GPU、I/O 與 Cache 的佈局與連線">
+              <defs>
+                <pattern id="grid" x="36" y="12" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#253645" stroke-width="1"/></pattern>
+                <pattern id="major-grid" x="36" y="12" width="96" height="96" patternUnits="userSpaceOnUse"><path d="M96 0H0V96" fill="none" stroke="#344958" stroke-width="1"/></pattern>
+              </defs>
+              <rect x="36" y="12" width="480" height="480" rx="3" fill="#0d1722"/>
+              <rect x="36" y="12" width="480" height="480" fill="url(#grid)"/>
+              <rect x="36" y="12" width="480" height="480" fill="url(#major-grid)" stroke="#324958"/>
+              <g class="axis-labels" aria-hidden="true">
+                <text x="36" y="511">0</text><text x="132" y="511">20</text><text x="228" y="511">40</text><text x="324" y="511">60</text><text x="420" y="511">80</text><text x="516" y="511">100</text>
+                <text x="18" y="496">0</text><text x="18" y="400">20</text><text x="18" y="304">40</text><text x="18" y="208">60</text><text x="18" y="112">80</text><text x="18" y="16">100</text>
+              </g>
+              $layout
+            </svg>
+          </div>
+
+          <div class="playback">
+            <span id="round-status">$status</span>
+            $playback
+          </div>
+        </section>
+
+        <section class="panel cost-panel" aria-labelledby="cost-title">
+          <header class="panel-header">
+            <div><h2 id="cost-title">成本趨勢</h2><p id="cost-caption" class="sr-only">每輪更新目前成本與最佳成本；橫軸為輪次，縱軸為成本。</p></div>
+            <div class="legend"><span><i></i>目前成本</span><span><i></i>最佳成本</span></div>
+          </header>
+          <div id="cost-chart" role="img" aria-label="按輪次比較目前成本與最佳成本的折線圖" aria-describedby="cost-caption">$chart</div>
+        </section>
+      </div>
+
+      <aside class="side-column" aria-label="示範數值與退火參數">
+        <section class="panel stats-panel" aria-label="目前佈局數值">
+          <div><span>目前成本</span><strong id="current-cost">$current_cost</strong></div>
+          <div><span>最佳成本</span><strong id="best-cost">$best_cost</strong></div>
+          <div><span>外框面積</span><strong id="current-area">$current_area</strong><small>格²</small></div>
+          <div><span>加權線長</span><strong id="current-wire">$current_wire</strong><small>格 × 權重</small></div>
+        </section>
+
+        <section class="panel settings" aria-labelledby="settings-title">
+          <header class="panel-header">
+            <h2 id="settings-title">退火參數</h2>
+            <a id="reset-settings" href="/" class="link-button">恢復預設</a>
+          </header>
+          <form id="parameters" action="/run" method="post">
+            <input type="hidden" name="run" value="$run_id">
+            $error
+            <fieldset class="temperature">
+              <legend class="sr-only">溫度與接受機率</legend>
+              <div class="field-grid">
+                <label>初始溫度 <code>T₀</code><input id="t0" type="number" name="t0" value="$t0" min="0.01" max="1000000" step="any" required></label>
+                <label>降溫率 <code>dt</code><input id="dt" type="number" name="dt" value="$dt" min="0.01" max="0.9999" step="any" required></label>
+                <label>機率常數 <code>k</code><input type="number" name="k" value="$k" min="0.01" max="1000000" step="any" required></label>
+                <label>終止溫度 <code>Tmin</code><input type="number" name="tmin" value="$tmin" min="0.01" max="1000000" step="any" required></label>
+              </div>
+            </fieldset>
+            <fieldset class="search">
+              <legend class="sr-only">鄰近解與搜尋</legend>
+              <div class="field-grid">
+                <label>初始擾動範圍 <code>s₀</code><input id="s0" type="number" name="s0" value="$s0" min="0.01" max="100" step="any" required></label>
+                <label>擾動縮小係數 <code>ds</code><input id="ds" type="number" name="ds" value="$ds" min="0.01" max="1" step="any" required></label>
+                <label>每輪嘗試次數 <code>m</code><input type="number" name="m" value="$m" min="1" max="10000" step="1" required></label>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend><span class="section-mark amber"></span>成本權重</legend>
+              <div class="field-grid weights">
+                <label>面積 <code>α</code><input type="number" name="area" value="$area" min="0" max="1000000" step="any" required></label>
+                <label>線長 <code>β</code><input type="number" name="wire" value="$wire" min="0" max="1000000" step="any" required></label>
+                <label>重疊 <code>γ</code><input type="number" name="overlap" value="$overlap" min="0" max="1000000" step="any" required></label>
+              </div>
+            </fieldset>
+            <button class="button" type="submit">套用參數並開始</button>
+          </form>
+        </section>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>
