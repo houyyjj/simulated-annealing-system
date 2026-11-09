@@ -25,7 +25,7 @@ def initial_solution():
     #合併直排x,直排y
     R0 = np.column_stack((x,y))
     #numpy 二維(4,2)，每列是一顆模組的[x,y]
-    return np.array(R0)
+    return R0
 
 # 3: 由現解 R 產生鄰近解R1(step3:隨機移動一顆方塊)
 def neighbor(R,s):

@@ -13,17 +13,14 @@
 
 '''
 
+import numpy as np 
 
-#複製R0
-import copy
-#隨機產生初始解、[0,1]間的亂數rand(1)
-import random
 
 #初始定義
 
 #晶片邊界長寬
-BOUND_X = 100.0
-BOUND_Y = 100.0
+BOUND_MIN = -100.0
+BOUND_MAX = 100.0
 
 #懲罰權重
 OVERLAP_PENALTY = 10.0
@@ -78,3 +75,20 @@ def neighbor(R,s):
     R1[idx][1] = new_y
     return R1
 
+# 能量 = 所有大外框面積+模組重疊懲罰
+def energy(R):
+    #找外框四個極端邊界
+    #先拿第0個模組當起點
+    min_x = R[0][0]
+    max_x = R[0][0] + MODULES[0][0]
+    min_y = R[0][1]
+    max_y = R[0][1] + MODULES[0][1]
+    
+    #
+    for i in range(len(R)):
+        x = R[i][0]
+        y = R[i][1]
+        w,h = MODULES[i]
+        
+        if x<min_x:
+            min_x = x
